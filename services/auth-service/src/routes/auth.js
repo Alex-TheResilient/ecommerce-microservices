@@ -4,7 +4,9 @@ const {
   register,
   login,
   getProfile,
+  makeAdmin,
 } = require('../controllers/authController');
+
 const { authenticate } = require('../middleware/auth');
 
 const router = express.Router();
@@ -23,5 +25,6 @@ const authLimiter = rateLimit({
 router.post('/register', authLimiter, register);
 router.post('/login', authLimiter, login);
 router.get('/profile', authenticate, getProfile);
+router.post('/make-admin', makeAdmin);
 
 module.exports = router;

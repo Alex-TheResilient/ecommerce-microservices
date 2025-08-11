@@ -202,3 +202,40 @@ exports.getProfile = async (req, res) => {
     });
   }
 };
+
+exports.makeAdmin = async (req, res) => {
+  try {
+    if (process.env.NODE_ENV === 'production') {
+      return res.status(403).json({
+        success: false,
+        message: 'Not available in production',
+      });
+    }
+
+    const { email } = req.body;
+
+    const user = await prisma.user.update({
+      where: { email },
+      data: { role: 'ADMIN' },
+      select: {
+        id: true,
+        email: true,
+        firstName: true,
+        lastName: true,
+        role: true,
+      },
+    });
+
+    res.json({
+      success: true,
+      message: 'User promoted to admin',
+      data: { user },
+    });
+  } catch (error) {
+    logger.error('Make admin error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error',
+    });
+  }
+};
