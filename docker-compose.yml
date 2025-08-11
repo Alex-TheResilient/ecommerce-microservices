@@ -1,0 +1,86 @@
+version: '3.8'
+
+services:
+  # Database
+  postgres:
+    image: postgres:15
+    environment:
+      POSTGRES_USER: ecommerce_user
+      POSTGRES_PASSWORD: ecommerce_pass
+      POSTGRES_DB: ecommerce_db
+    ports:
+      - '5432:5432'
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  # Cache
+  redis:
+    image: redis:7-alpine
+    ports:
+      - '6379:6379'
+
+  # Auth Service
+  auth-service:
+    build: ./services/auth-service
+    ports:
+      - '3001:3000'
+    environment:
+      - NODE_ENV=development
+      - DATABASE_URL=postgresql://ecommerce_user:ecommerce_pass@postgres:5432/ecommerce_db
+      - REDIS_URL=redis://redis:6379
+      - JWT_SECRET=your-super-secret-jwt-key
+    depends_on:
+      - postgres
+      - redis
+    volumes:
+      - ./services/auth-service:/app
+      - /app/node_modules
+
+  # Product Service
+  product-service:
+    build: ./services/product-service
+    ports:
+      - '3002:3000'
+    environment:
+      - NODE_ENV=development
+      - DATABASE_URL=postgresql://ecommerce_user:ecommerce_pass@postgres:5432/ecommerce_db
+    depends_on:
+      - postgres
+    volumes:
+      - ./services/product-service:/app
+      - /app/node_modules
+
+  # Order Service
+  order-service:
+    build: ./services/order-service
+    ports:
+      - '3003:3000'
+    environment:
+      - NODE_ENV=development
+      - DATABASE_URL=postgresql://ecommerce_user:ecommerce_pass@postgres:5432/ecommerce_db
+    depends_on:
+      - postgres
+    volumes:
+      - ./services/order-service:/app
+      - /app/node_modules
+
+  # API Gateway
+  api-gateway:
+    build: ./services/api-gateway
+    ports:
+      - '3000:3000'
+    environment:
+      - NODE_ENV=development
+      - AUTH_SERVICE_URL=http://auth-service:3000
+      - PRODUCT_SERVICE_URL=http://product-service:3000
+      - ORDER_SERVICE_URL=http://order-service:3000
+    depends_on:
+      - auth-service
+      - product-service
+      - order-service
+    volumes:
+      - ./services/api-gateway:/app
+      - /app/node_modules
+
+volumes:
+  postgres_data:
