@@ -12,12 +12,22 @@ services:
       - '5432:5432'
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ecommerce_user -d ecommerce_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
   # Cache
   redis:
     image: redis:7-alpine
     ports:
       - '6379:6379'
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
 
   # Auth Service
   auth-service:
@@ -26,15 +36,20 @@ services:
       - '3001:3000'
     environment:
       - NODE_ENV=development
+      - PORT=3000
       - DATABASE_URL=postgresql://ecommerce_user:ecommerce_pass@postgres:5432/ecommerce_db
       - REDIS_URL=redis://redis:6379
-      - JWT_SECRET=your-super-secret-jwt-key
+      - JWT_SECRET=your-super-secret-jwt-key-change-in-production
+      - JWT_EXPIRES_IN=7d
     depends_on:
-      - postgres
-      - redis
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
     volumes:
       - ./services/auth-service:/app
       - /app/node_modules
+    restart: unless-stopped
 
   # Product Service
   product-service:
@@ -43,12 +58,16 @@ services:
       - '3002:3000'
     environment:
       - NODE_ENV=development
+      - PORT=3000
       - DATABASE_URL=postgresql://ecommerce_user:ecommerce_pass@postgres:5432/ecommerce_db
+      - REDIS_URL=redis://redis:6379
     depends_on:
-      - postgres
+      postgres:
+        condition: service_healthy
     volumes:
       - ./services/product-service:/app
       - /app/node_modules
+    restart: unless-stopped
 
   # Order Service
   order-service:
@@ -57,12 +76,33 @@ services:
       - '3003:3000'
     environment:
       - NODE_ENV=development
+      - PORT=3000
       - DATABASE_URL=postgresql://ecommerce_user:ecommerce_pass@postgres:5432/ecommerce_db
+      - REDIS_URL=redis://redis:6379
     depends_on:
-      - postgres
+      postgres:
+        condition: service_healthy
     volumes:
       - ./services/order-service:/app
       - /app/node_modules
+    restart: unless-stopped
+
+  # Notification Service
+  notification-service:
+    build: ./services/notification-service
+    ports:
+      - '3004:3000'
+    environment:
+      - NODE_ENV=development
+      - PORT=3000
+      - REDIS_URL=redis://redis:6379
+    depends_on:
+      redis:
+        condition: service_healthy
+    volumes:
+      - ./services/notification-service:/app
+      - /app/node_modules
+    restart: unless-stopped
 
   # API Gateway
   api-gateway:
@@ -71,16 +111,20 @@ services:
       - '3000:3000'
     environment:
       - NODE_ENV=development
+      - PORT=3000
       - AUTH_SERVICE_URL=http://auth-service:3000
       - PRODUCT_SERVICE_URL=http://product-service:3000
       - ORDER_SERVICE_URL=http://order-service:3000
+      - NOTIFICATION_SERVICE_URL=http://notification-service:3000
     depends_on:
       - auth-service
       - product-service
       - order-service
+      - notification-service
     volumes:
       - ./services/api-gateway:/app
       - /app/node_modules
+    restart: unless-stopped
 
 volumes:
   postgres_data:
