@@ -604,7 +604,134 @@ app.use(
   })
 );
 
-// Endpoint adicional para testing directo del proxy
+// Notification Service Routes (auth required for user endpoints)
+app.use('/api/notifications', authMiddleware, async (req, res) => {
+  try {
+    const axios = require('axios');
+
+    logger.info('🔔 Manual forwarding to notification service', {
+      method: req.method,
+      path: req.path,
+      originalUrl: req.originalUrl,
+      target: services.notification,
+      userId: req.user?.id,
+      hasAuth: !!req.headers.authorization,
+    });
+
+    // Construir la URL del target
+    const targetUrl = `${services.notification}${req.originalUrl}`;
+
+    // Preparar headers
+    const forwardHeaders = {
+      'Content-Type': req.headers['content-type'] || 'application/json',
+      'User-Agent': 'API-Gateway-Notification-Forward',
+    };
+
+    // Forward auth headers
+    if (req.headers.authorization) {
+      forwardHeaders['Authorization'] = req.headers.authorization;
+    }
+
+    // Forward user info
+    if (req.user) {
+      forwardHeaders['X-User-Id'] = req.user.id.toString();
+      forwardHeaders['X-User-Role'] = req.user.role;
+      forwardHeaders['X-User-Email'] = req.user.email || '';
+    }
+
+    // Configuración de axios
+    const axiosConfig = {
+      method: req.method.toLowerCase(),
+      url: targetUrl,
+      headers: forwardHeaders,
+      timeout: 30000,
+      ...(Object.keys(req.query).length > 0 && { params: req.query }),
+      ...(req.body &&
+        ['post', 'put', 'patch'].includes(req.method.toLowerCase()) && {
+          data: req.body,
+        }),
+    };
+
+    logger.info('📤 Forwarding notification request', {
+      method: axiosConfig.method,
+      url: axiosConfig.url,
+      hasData: !!axiosConfig.data,
+    });
+
+    // Realizar la request
+    const startTime = Date.now();
+    const response = await axios(axiosConfig);
+    const duration = Date.now() - startTime;
+
+    logger.info('✅ Notification service response received', {
+      status: response.status,
+      duration: `${duration}ms`,
+    });
+
+    // Enviar respuesta
+    res.status(response.status).json(response.data);
+  } catch (error) {
+    logger.error('❌ Notification service forwarding failed', {
+      error: error.message,
+      status: error.response?.status,
+      method: req.method,
+      path: req.path,
+    });
+
+    if (error.response) {
+      return res.status(error.response.status).json(error.response.data);
+    }
+
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error while forwarding to notification service',
+      timestamp: new Date().toISOString(),
+    });
+  }
+});
+
+// Add public endpoint for notification webhooks (no auth)
+app.use('/api/events', async (req, res) => {
+  try {
+    const axios = require('axios');
+
+    logger.info('📨 Forwarding event to notification service', {
+      eventType: req.body.eventType,
+      source: 'api-gateway',
+    });
+
+    const response = await axios.post(
+      `${services.notification}/api/events`,
+      req.body,
+      {
+        headers: {
+          'Content-Type': 'application/json',
+          'User-Agent': 'API-Gateway-Event-Forward',
+        },
+        timeout: 10000,
+      }
+    );
+
+    res.status(response.status).json(response.data);
+  } catch (error) {
+    logger.error('❌ Event forwarding failed', {
+      error: error.message,
+      eventType: req.body?.eventType,
+    });
+
+    if (error.response) {
+      return res.status(error.response.status).json(error.response.data);
+    }
+
+    res.status(500).json({
+      success: false,
+      message: 'Failed to forward event',
+      timestamp: new Date().toISOString(),
+    });
+  }
+});
+
+// Test direct proxy
 app.post('/api/test/order-direct', authMiddleware, async (req, res) => {
   try {
     const axios = require('axios');
