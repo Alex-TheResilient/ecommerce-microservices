@@ -3,6 +3,7 @@ const jwt = require('jsonwebtoken');
 const { PrismaClient } = require('@prisma/client');
 const { z } = require('zod');
 const { logger } = require('../utils/logger');
+const { notifyUserRegistered } = require('../services/notificationService');
 
 const prisma = new PrismaClient();
 
@@ -67,6 +68,19 @@ exports.register = async (req, res) => {
     const token = generateToken(user.id);
 
     logger.info(`User registered: ${user.email}`);
+
+    try {
+      await notifyUserRegistered(user);
+      logger.info('Welcome notification sent successfully', {
+        userId: user.id,
+      });
+    } catch (notificationError) {
+      // Log error but don't fail the registration
+      logger.warn('Failed to send welcome notification', {
+        userId: user.id,
+        error: notificationError.message,
+      });
+    }
 
     res.status(201).json({
       success: true,
@@ -233,6 +247,27 @@ exports.makeAdmin = async (req, res) => {
     });
   } catch (error) {
     logger.error('Make admin error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error',
+    });
+  }
+};
+
+exports.testNotifications = async (req, res) => {
+  try {
+    const {
+      testNotificationService,
+    } = require('../services/notificationService');
+    const result = await testNotificationService();
+
+    res.json({
+      success: true,
+      message: 'Notification service connectivity test',
+      data: result,
+    });
+  } catch (error) {
+    logger.error('Test notifications error:', error);
     res.status(500).json({
       success: false,
       message: 'Internal server error',

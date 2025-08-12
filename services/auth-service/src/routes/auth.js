@@ -5,6 +5,7 @@ const {
   login,
   getProfile,
   makeAdmin,
+  testNotifications,
 } = require('../controllers/authController');
 
 const { authenticate } = require('../middleware/auth');
@@ -26,5 +27,6 @@ router.post('/register', authLimiter, register);
 router.post('/login', authLimiter, login);
 router.get('/profile', authenticate, getProfile);
 router.post('/make-admin', makeAdmin);
+router.get('/test-notifications', testNotifications);
 
 module.exports = router;
