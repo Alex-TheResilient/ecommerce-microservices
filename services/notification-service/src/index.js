@@ -17,8 +17,27 @@ const { initializeQueues } = require('./services/queueService');
 const { initializeRedis } = require('./config/redis');
 const { initializeEmailService } = require('./services/emailService');
 
+const swaggerUi = require('swagger-ui-express');
+const swaggerSpec = require('./config/swagger');
+
 const app = express();
 const PORT = process.env.PORT || 3000;
+
+// Swagger documentation
+app.use(
+  '/docs',
+  swaggerUi.serve,
+  swaggerUi.setup(swaggerSpec, {
+    explorer: true,
+    customCss: '.swagger-ui .topbar { display: none }',
+    customSiteTitle: 'Notification Service API Documentation',
+  })
+);
+
+app.get('/docs.json', (req, res) => {
+  res.setHeader('Content-Type', 'application/json');
+  res.send(swaggerSpec);
+});
 
 // Security middleware
 app.use(helmet());

@@ -20,7 +20,9 @@
     "bull": "^4.12.0",
     "redis": "^4.6.10",
     "nodemailer": "^6.9.7",
-    "handlebars": "^4.7.8"
+    "handlebars": "^4.7.8",
+    "swagger-jsdoc": "^6.2.8",
+    "swagger-ui-express": "^5.0.0"
   },
   "devDependencies": {
     "nodemon": "^3.0.1",
