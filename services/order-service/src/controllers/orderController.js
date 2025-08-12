@@ -3,6 +3,12 @@ const { z } = require('zod');
 const { logger } = require('../utils/logger');
 const { AuthService } = require('../services/authService');
 const { ProductService } = require('../services/productService');
+const {
+  notifyOrderCreated,
+  notifyOrderConfirmed,
+  notifyOrderShipped,
+  notifyOrderCancelled,
+} = require('../services/notificationService');
 
 // Mock database
 let orders = [];
@@ -188,6 +194,21 @@ exports.createOrder = async (req, res) => {
       `Order created: ${newOrder.id} by ${user.email}, total: $${total}`
     );
 
+    try {
+      await notifyOrderCreated(newOrder, user);
+      logger.info('Order creation notification sent successfully', {
+        orderId: newOrder.id,
+        userId: user.id,
+      });
+    } catch (notificationError) {
+      // Log error but don't fail the order creation
+      logger.warn('Failed to send order creation notification', {
+        orderId: newOrder.id,
+        userId: user.id,
+        error: notificationError.message,
+      });
+    }
+
     res.status(201).json({
       success: true,
       message: 'Order created successfully',
@@ -255,18 +276,64 @@ exports.updateOrderStatus = async (req, res) => {
       });
     }
 
+    const order = orders[orderIndex];
+    const previousStatus = order.status;
+
     // Update order status
     orders[orderIndex].status = validatedData.status;
     orders[orderIndex].updatedAt = new Date().toISOString();
 
+    const updatedOrder = orders[orderIndex];
+
     logger.info(
-      `Order status updated: ${id} to ${validatedData.status} by ${user.email}`
+      `Order status updated: ${id} from ${previousStatus} to ${validatedData.status} by ${user.email}`
     );
+
+    try {
+      // Get the user who made the order for notifications
+      const orderUser = {
+        id: order.userId,
+        email: order.userEmail,
+        firstName: order.userEmail.split('@')[0], // Fallback if no firstName
+      };
+
+      switch (validatedData.status) {
+        case 'CONFIRMED':
+          await notifyOrderConfirmed(updatedOrder, orderUser);
+          logger.info('Order confirmed notification sent', { orderId: id });
+          break;
+
+        case 'SHIPPED':
+          await notifyOrderShipped(updatedOrder, orderUser);
+          logger.info('Order shipped notification sent', { orderId: id });
+          break;
+
+        case 'CANCELLED':
+          const reason = req.body.reason || 'Cancelled by admin';
+          await notifyOrderCancelled(updatedOrder, orderUser, reason);
+          logger.info('Order cancelled notification sent', { orderId: id });
+          break;
+
+        // For DELIVERED and other statuses, we could add more notifications
+        default:
+          logger.info('No specific notification for status', {
+            orderId: id,
+            status: validatedData.status,
+          });
+      }
+    } catch (notificationError) {
+      // Log error but don't fail the status update
+      logger.warn('Failed to send order status notification', {
+        orderId: id,
+        status: validatedData.status,
+        error: notificationError.message,
+      });
+    }
 
     res.json({
       success: true,
       message: 'Order status updated successfully',
-      data: { order: orders[orderIndex] },
+      data: { order: updatedOrder },
     });
   } catch (error) {
     if (error instanceof z.ZodError) {
@@ -355,6 +422,27 @@ exports.getAllOrders = async (req, res) => {
     }
 
     logger.error('Get all orders error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error',
+    });
+  }
+};
+
+exports.testNotifications = async (req, res) => {
+  try {
+    const {
+      testNotificationService,
+    } = require('../services/notificationService');
+    const result = await testNotificationService();
+
+    res.json({
+      success: true,
+      message: 'Notification service connectivity test from Order Service',
+      data: result,
+    });
+  } catch (error) {
+    logger.error('Test notifications error:', error);
     res.status(500).json({
       success: false,
       message: 'Internal server error',

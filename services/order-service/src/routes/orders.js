@@ -6,6 +6,7 @@ const {
   createOrder,
   updateOrderStatus,
   getAllOrders,
+  testNotifications,
 } = require('../controllers/orderController');
 
 const router = express.Router();
@@ -30,5 +31,6 @@ router.post('/', createOrder);
 // Admin routes
 router.get('/', getAllOrders);
 router.put('/:id/status', updateOrderStatus);
+router.get('/test-notifications', testNotifications);
 
 module.exports = router;
