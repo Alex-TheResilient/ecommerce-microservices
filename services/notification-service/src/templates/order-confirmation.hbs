@@ -1,0 +1,128 @@
+<html>
+  <head>
+    <meta charset='utf-8' />
+    <meta name='viewport' content='width=device-width, initial-scale=1.0' />
+    <title>Confirmación de Pedido #{{orderId}}</title>
+  </head>
+  <body
+    style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; margin: 0; padding: 0; background-color: #f4f4f4;"
+  >
+    <div
+      style='max-width: 600px; margin: 0 auto; background-color: #ffffff; box-shadow: 0 0 10px rgba(0,0,0,0.1);'
+    >
+
+      <!-- Header -->
+      <div
+        style='background: linear-gradient(135deg, #059669 0%, #10B981 100%); color: white; padding: 40px 20px; text-align: center;'
+      >
+        <h1 style='margin: 0; font-size: 28px; font-weight: bold;'>¡Gracias por
+          tu pedido! ✅</h1>
+        <p style='margin: 10px 0 0 0; font-size: 16px; opacity: 0.9;'>Pedido #{{orderId}}
+          confirmado</p>
+      </div>
+
+      <!-- Content -->
+      <div style='padding: 40px 20px;'>
+        <p style='font-size: 16px; color: #333; margin-bottom: 20px;'>
+          Hola
+          <strong>{{firstName}}</strong>,
+        </p>
+
+        <p style='font-size: 16px; color: #333; margin-bottom: 20px;'>
+          ¡Excelente! Tu pedido
+          <strong>#{{orderId}}</strong>
+          ha sido confirmado y está siendo preparado para envío.
+        </p>
+
+        <p style='font-size: 16px; color: #333; margin-bottom: 30px;'>
+          <strong>Fecha del pedido:</strong>
+          {{formatDate orderDate}}
+        </p>
+
+        <!-- Order Items -->
+        <div
+          style='background-color: #f8fafc; padding: 20px; border-radius: 8px; margin: 30px 0;'
+        >
+          <h3
+            style='color: #059669; margin: 0 0 20px 0; font-size: 18px;'
+          >Detalles del pedido:</h3>
+
+          {{#each items}}
+            <div
+              style='border-bottom: 1px solid #e5e7eb; padding: 15px 0; display: flex; align-items: center;'
+            >
+              <div style='flex: 1;'>
+                <h4
+                  style='margin: 0 0 5px 0; font-size: 16px; color: #1f2937;'
+                >{{productName}}</h4>
+                <p style='margin: 0; color: #6b7280; font-size: 14px;'>
+                  Cantidad:
+                  {{quantity}}
+                  ×
+                  {{formatCurrency price}}
+                </p>
+              </div>
+              <div style='text-align: right;'>
+                <p
+                  style='margin: 0; font-weight: bold; font-size: 16px; color: #1f2937;'
+                >
+                  {{formatCurrency total}}
+                </p>
+              </div>
+            </div>
+          {{/each}}
+
+          <!-- Total -->
+          <div
+            style='margin-top: 20px; padding-top: 20px; border-top: 2px solid #059669;'
+          >
+            <div style='text-align: right;'>
+              <p
+                style='margin: 0; font-size: 20px; font-weight: bold; color: #059669;'
+              >
+                Total:
+                {{formatCurrency total}}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Next Steps -->
+        <div
+          style='background-color: #fef3c7; padding: 20px; border-radius: 8px; margin: 30px 0; border-left: 4px solid #f59e0b;'
+        >
+          <h3 style='color: #92400e; margin: 0 0 15px 0; font-size: 18px;'>📦
+            Próximos pasos</h3>
+          <ul style='color: #92400e; margin: 0; padding-left: 20px;'>
+            <li style='margin-bottom: 8px;'>Estamos preparando tu pedido</li>
+            <li style='margin-bottom: 8px;'>Te notificaremos cuando sea enviado</li>
+            <li style='margin-bottom: 8px;'>Recibirás el número de seguimiento</li>
+            <li>Tiempo estimado: 1-3 días hábiles</li>
+          </ul>
+        </div>
+
+        <!-- CTA Button -->
+        <div style='text-align: center; margin: 30px 0;'>
+          <a
+            href='{{trackingUrl}}'
+            style='background: linear-gradient(135deg, #059669 0%, #10B981 100%); color: white; padding: 15px 30px; text-decoration: none; border-radius: 8px; font-weight: bold; font-size: 16px; display: inline-block; box-shadow: 0 4px 12px rgba(5, 150, 105, 0.3);'
+          >
+            Ver Estado del Pedido
+          </a>
+        </div>
+      </div>
+
+      <!-- Footer -->
+      <div
+        style='background-color: #1f2937; color: #9ca3af; padding: 20px; text-align: center; font-size: 14px;'
+      >
+        <p style='margin: 0 0 10px 0;'>
+          Si tienes alguna pregunta sobre tu pedido, contáctanos.
+        </p>
+        <p style='margin: 0; font-size: 12px; opacity: 0.8;'>
+          E-commerce Platform &copy; 2025 - Todos los derechos reservados
+        </p>
+      </div>
+    </div>
+  </body>
+</html>
