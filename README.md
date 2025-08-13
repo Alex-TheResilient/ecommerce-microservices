@@ -12,6 +12,7 @@
 ## 📋 Table of Contents
 
 - [🏗️ Architecture Overview](#️-architecture-overview)
+- [🌐 Live Demo](#-live-demo)
 - [✨ Features](#-features)
 - [🛠️ Tech Stack](#️-tech-stack)
 - [🚀 Quick Start](#-quick-start)
@@ -52,6 +53,34 @@
 User Registration → Auth Service → Event → Notification Service → Welcome Email + In-App
 Order Creation   → Order Service → Event → Notification Service → Confirmation Email + In-App
 Status Updates   → Order Service → Event → Notification Service → Update Notifications
+```
+
+### 📊 Interactive API Documentation
+
+- **Auth Service**: `http://localhost:3001/docs` - JWT authentication & user management
+- **Order Service**: `http://localhost:3003/docs` - Order processing & tracking
+- **Notification Service**: `http://localhost:3004/docs` - **Event-driven notifications with queues**
+- **Product Service**: `http://localhost:3002/docs` - Product catalog & search
+
+**🎯 Featured**: Notification Service Swagger shows advanced event-driven architecture with Bull queues, Redis, and Handlebars templates.
+
+### 🔄 Event-Driven Architecture (Advanced)
+
+**Real-time Event Processing:**
+
+```bash
+# Example: One user registration triggers multiple notifications
+POST /api/events
+{
+  "eventType": "user.registered",
+  "data": {
+    "user": {"id": "123", "email": "user@example.com", "firstName": "John"}
+  }
+}
+
+# Result: Automatically creates 2 jobs
+# → Email Job: Welcome email with template
+# → In-App Job: Welcome notification in Redis
 ```
 
 ## ✨ Features
